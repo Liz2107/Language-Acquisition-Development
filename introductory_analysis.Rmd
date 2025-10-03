@@ -1,0 +1,75 @@
+---
+title: "Exploratory Analysis of Wordbank Data"
+author: "Peyton Barger, Mauricio Bell, Liz Cutting"
+date: "2 October 2025"
+output:
+  pdf_document: default
+---
+
+```{r setup, include=FALSE, message=FALSE,warning=FALSE}
+library(knitr)
+library(tinytex)
+library(tidyverse)
+library(dplyr)
+
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(out.width = "60%",fig.align='center')
+```
+
+We want data that has a lot of points and examples of bilinguality and differing developmental patterns. 
+
+```{r}
+data <- read_csv("wordbank_administration_data.csv")
+
+glimpse(data)
+
+```
+
+
+```{r}
+mean(data$comprehension)
+mean(data$age)
+mean(data$production)
+
+sd(data$comprehension)
+sd(data$age)
+sd(data$production)
+
+max(data$comprehension)
+min(data$comprehension)
+
+max(data$age)
+min(data$age)
+
+max(data$production)
+min(data$production)
+
+data %>%
+  count(typically_developing)
+data %>%
+  count(monolingual)
+data %>%
+  count(is_norming)
+data %>%
+  count(age)
+data %>%
+  count(birth_order)
+data %>%
+  count(sex)
+data %>%
+  count(race)
+data %>%
+  count(caregiver_education)
+```
+
+
+```{r}
+
+```
+
+```{r}
+data %>%
+  count(age)
+```
