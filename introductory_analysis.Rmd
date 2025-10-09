@@ -66,10 +66,38 @@ data %>%
 
 
 ```{r}
+words <- read.csv("wordbank_instrument_data.csv")
 
+tot_words <- words %>%
+  group_by(child_id) %>%
+  summarise(unique_count = n_distinct(english_gloss[value == "produces"]))
+
+print(tot_words)
 ```
 
 ```{r}
-data %>%
-  count(age)
+
 ```
+
+Beyond this, we want to check that our child_ids match up:
+```{r}
+unique_child_ids_words <- unique(words$child_id)
+unique_child_ids_data <- unique(data$child_id)
+
+# Check if any child_id from 'words' is missing in 'data' and vice versa
+missing_in_data <- setdiff(unique_child_ids_words, unique_child_ids_data)
+missing_in_words <- setdiff(unique_child_ids_data, unique_child_ids_words)
+```
+We have a lot missing, but we still have plenty to do the analysis with. 
+Now we join the data:
+```{r}
+data_with_word_count <- data %>%
+  left_join(tot_words, by = "child_id")
+
+data_with_valid_counts <- data_with_word_count %>%
+  filter(!is.na(unique_count))
+
+print(data_with_valid_counts)
+
+```
+
