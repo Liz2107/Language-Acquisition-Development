@@ -29,23 +29,6 @@ glimpse(data)
 
 
 ```{r}
-mean(data$comprehension)
-mean(data$age)
-mean(data$production)
-
-sd(data$comprehension)
-sd(data$age)
-sd(data$production)
-
-max(data$comprehension)
-min(data$comprehension)
-
-max(data$age)
-min(data$age)
-
-max(data$production)
-min(data$production)
-
 data %>%
   count(typically_developing)
 data %>%
@@ -75,9 +58,6 @@ tot_words <- words %>%
 print(tot_words)
 ```
 
-```{r}
-
-```
 
 Beyond this, we want to check that our child_ids match up:
 ```{r}
@@ -99,5 +79,99 @@ data_with_valid_counts <- data_with_word_count %>%
 
 print(data_with_valid_counts)
 
+```
+
+
+```{r}
+data_with_valid_counts %>%
+  count(typically_developing)
+data_with_valid_counts %>%
+  count(monolingual)
+data_with_valid_counts %>%
+  count(is_norming)
+data_with_valid_counts %>%
+  count(age)
+data_with_valid_counts %>%
+  count(birth_order)
+data_with_valid_counts %>%
+  count(sex)
+data_with_valid_counts %>%
+  count(race)
+data_with_valid_counts %>%
+  count(caregiver_education)
+```
+```{r}
+long_data <- data_with_valid_counts %>%
+  select(typically_developing, monolingual, is_norming) %>%
+  mutate(across(everything(), as.character)) %>% 
+  pivot_longer(
+    cols = everything(), 
+    names_to = "variable",
+    values_to = "value" 
+  )
+
+value_counts <- long_data %>%
+  group_by(variable, value) %>%
+  summarise(count = n(), .groups = "drop")
+
+plot <- ggplot(value_counts, aes(x = reorder(value, -count), y = count, fill = value)) +
+  geom_bar(stat = "identity", show.legend = FALSE) +
+  facet_wrap(~ variable, scales = "free_x") +
+  theme_minimal() +
+  labs(x = "Category", y = "Count", title = "Distribution of Categorical Variables") +
+  theme(axis.text.x = element_text())
+
+```
+```{r}
+ggsave("dist_resp+preds.png", plot = plot, width = 7, height = 5, units = "in", dpi = 300)
+```
+```{r}
+ggplot(data_with_valid_counts, aes(x = age, y = unique_count)) +
+  geom_point() +
+  labs(x = "Category", y = "Count", title = "Distribution of Categorical Variables") 
+```
+```{r}
+data_with_valid_counts$age_category <- cut(data_with_valid_counts$age,
+                                           breaks = c(7, 12, 20, 30), 
+                                           labels = c("8-12", "12-20", "20-30"),
+                                           right = TRUE)
+
+data_with_valid_counts$age_category <- factor(data_with_valid_counts$age_category,
+                                              levels = c("8-12", "12-20", "20-30"))
+
+plot2 <- ggplot(data_with_valid_counts, aes(x = age_category, y = unique_count, fill = age_category)) +
+  geom_boxplot() +
+  scale_fill_manual(values = c("8-12" = "#FF6347", "12-20" = "#3CB371", "20-30" = "#1E90FF")) +
+  labs(x = "Age Range (months)", y = "Number of Words Learned", title = "Distribution of Words Learned by Age Range")
+
+ggsave("dist_age_v_words.png", plot = plot2, width = 7, height = 5, units = "in", dpi = 300)
+
+```
+
+
+
+
+Filling in our chart: 
+```{r}
+median(data_with_valid_counts$comprehension)
+median(data_with_valid_counts$age)
+median(data_with_valid_counts$production)
+median(data_with_valid_counts$unique_count)
+
+sd(data_with_valid_counts$comprehension)
+sd(data_with_valid_counts$age)
+sd(data_with_valid_counts$production)
+
+max(data_with_valid_counts$comprehension)
+min(data_with_valid_counts$comprehension)
+
+max(data_with_valid_counts$age)
+min(data_with_valid_counts$age)
+
+max(data_with_valid_counts$production)
+min(data_with_valid_counts$production)
+
+max(data_with_valid_counts$unique_count)
+min(data_with_valid_counts$unique_count)
 ```
 
