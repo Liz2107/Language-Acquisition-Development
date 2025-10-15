@@ -1,0 +1,34 @@
+---
+title: "Peyton_work"
+output: html_document
+---
+
+
+Normalize data to use the same words
+```{r}
+words <- read.csv("wordbank_instrument_data.csv")
+data <- read_csv("wordbank_administration_data.csv")
+filtered_data <- data %>% select(child_id, is_norming, age, typically_developing)
+
+child_words <- inner_join(words, filtered_data, by = "child_id")
+
+#Child 1 is a norming CDI set 
+CDI_words <- child_words %>% filter(child_id == 1)
+CDI_words <- unique(CDI_words$english_gloss)
+child_CDI_words <- child_words %>% filter(english_gloss %in% CDI_words)
+
+# tot_words_norming <- tot_words %>% filter(is_norming) %>% group_by(child_id) %>% count
+# tot_words_not_norming <- tot_words %>% filter(!is_norming) %>% group_by(child_id) %>% count
+# print(tot_words)
+tot_CDI_words <- child_CDI_words %>% group_by(child_id) %>%
+  summarise(unique_count = n_distinct(english_gloss[value == "produces"]), age = max(age.x), typically_developing = min(typically_developing))
+```
+
+Graph the data 
+```{r}
+atypical <- tot_CDI_words %>% filter(!typically_developing) %>%
+  transform(age_boxes = ifelse(age <= 12, "8-12", ifelse(age <= 20, "13-20", ">20")))
+ggplot(data = atypical, aes(x = age_boxes, y = unique_count)) + geom_boxplot()
+ggplot(data = atypical, aes(x = age)) + geom_histogram()
+```
+
