@@ -31,16 +31,27 @@ atypical <- tot_CDI_words %>% filter(!typically_developing) %>%
 ggplot(data = atypical, aes(x = age_boxes, y = unique_count)) + geom_boxplot() +
   labs(x = "Age Range (months)", y = "Number of Words Learned", title = "Distribution of Words Learned by Age Range")
 
-ggsave("dist_age_v_words.png", plot = plot2, width = 7, height = 5, units = "in", dpi = 300)
-ggplot(data = atypical, aes(x = age)) + geom_histogram()
+plot3 <- ggplot(data = atypical, aes(x = age)) + geom_histogram() +
+  labs(x = "Age (months)", y = "Count", title = "Distibution of Atypically Developing Children by Age")
+ggsave("age_dist.png", plot = plot3, width = 7, height = 5, units = "in", dpi = 300)
 ```
 
 ```{r}
 tot_CDI_words2 <- tot_CDI_words %>% transform(typically_developing = ifelse(typically_developing == 1,"Typically Developing", "Atypical Development"))
-ggplot(tot_CDI_words2, aes(x = age, y = unique_count, color = typically_developing)) + geom_point(alpha = 0) + geom_jitter(width = .5, height = .5, alpha = .3) +
+plot3<-ggplot(tot_CDI_words2, aes(x = age, y = unique_count, color = typically_developing)) + geom_point(alpha = 0) + geom_jitter(width = .5, height = .5, alpha = .3) +
   labs(x = "Age Range (months)", y = "Number of Words Learned", title = "Distribution of Words Learned by Age Range", color = "Development") + geom_smooth(se = FALSE, method = "lm")
-ggsave("dist_age_v_words_scatter.png", plot = plot2, width = 7, height = 5, units = "in", dpi = 300)
+ggsave("dist_age_v_words_scatter.png", plot = plot3, width = 7, height = 5, units = "in", dpi = 300)
 ```
 
+
+S curve of words learned at 22-25 months
+```{r}
+  words_in_age_range <- tot_CDI_words %>% filter(age<=25) %>% filter(age>=22)
+  plot4 <- ggplot(data = words_in_age_range, aes(x = unique_count, y = typically_developing)) + geom_jitter(width = 0.5, height = 0.1) +geom_hline(yintercept=mean(words_in_age_range$typically_developing),color="red") + geom_smooth(formula = y ~ x, method = "glm",
+method.args=list(family="binomial"),se=FALSE,color="blue", alpha = 0.5) + labs(x = "Number of Words Learned at 22-25 months", y = "Typically Developing", title = "Words Learned vs Development", color = "Development")
+  
+  ggsave("logistic_words.png", plot = plot4, width = 7, height = 5, units = "in", dpi = 300)
+
+```
 
 
