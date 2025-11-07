@@ -1,0 +1,146 @@
+---
+title: "Predictive Analysis of Wordbank Data"
+author: "Peyton Barger, Mauricio Bell, Liz Cutting"
+date: "2 October 2025"
+output:
+  pdf_document: default
+---
+
+```{r setup, include=FALSE, message=FALSE,warning=FALSE}
+library(knitr)
+library(tinytex)
+library(tidyverse)
+library(dplyr)
+
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(out.width = "60%",fig.align='center')
+```
+
+We want data that has a lot of points and examples of bilinguality and differing developmental patterns. 
+
+```{r}
+data <- read_csv("wordbank_administration_data.csv")
+
+glimpse(data)
+
+```
+
+
+```{r}
+data %>%
+  count(typically_developing)
+data %>%
+  count(monolingual)
+data %>%
+  count(is_norming)
+data %>%
+  count(age)
+data %>%
+  count(birth_order)
+data %>%
+  count(sex)
+data %>%
+  count(race)
+data %>%
+  count(caregiver_education)
+```
+
+
+```{r}
+words <- read.csv("wordbank_instrument_data.csv")
+
+tot_words <- words %>%
+  group_by(child_id) %>%
+  summarise(unique_count = n_distinct(english_gloss[value == "produces"]))
+
+print(tot_words)
+```
+
+
+Beyond this, we want to check that our child_ids match up:
+```{r}
+unique_child_ids_words <- unique(words$child_id)
+unique_child_ids_data <- unique(data$child_id)
+
+# Check if any child_id from 'words' is missing in 'data' and vice versa
+missing_in_data <- setdiff(unique_child_ids_words, unique_child_ids_data)
+missing_in_words <- setdiff(unique_child_ids_data, unique_child_ids_words)
+```
+We have a lot missing, but we still have plenty to do the analysis with. 
+Now we join the data:
+```{r}
+data_with_word_count <- data %>%
+  left_join(tot_words, by = "child_id")
+
+data_with_valid_counts <- data_with_word_count %>%
+  filter(!is.na(unique_count))
+
+print(data_with_valid_counts)
+
+```
+
+
+```{r}
+data_with_valid_counts %>%
+  count(typically_developing)
+data_with_valid_counts %>%
+  count(monolingual)
+data_with_valid_counts %>%
+  count(is_norming)
+data_with_valid_counts %>%
+  count(age)
+data_with_valid_counts %>%
+  count(birth_order)
+data_with_valid_counts %>%
+  count(sex)
+data_with_valid_counts %>%
+  count(race)
+data_with_valid_counts %>%
+  count(caregiver_education)
+```
+
+```{r}
+
+rows <- sample(x=nrow(data_with_valid_counts),size=floor(0.75*nrow(data_with_valid_counts)),replace=FALSE)
+
+training <- data_with_valid_counts[rows,]
+testing <- data_with_valid_counts[-rows,]
+
+
+model <- glm(typically_developing~age+comprehension+production+is_norming+unique_count+monolingual, data=training, family="binomial")
+
+
+summary(model)
+```
+
+
+```{r}
+library(ROCR)
+
+testing_results <- testing %>%
+  mutate(prob=predict(model,newdata=testing,type='response'),
+         pred_class=if_else(prob>0.95,'TRUE','FALSE'))
+
+
+glimpse(testing_results)
+
+```
+
+
+```{r}
+testing_results <- testing_results %>%
+  mutate(label = as.logical(typically_developing))
+
+pred <- prediction(predictions = testing_results$prob,
+                   labels = testing_results$label)
+
+perf <- performance(pred,measure='tpr',x.measure='fpr')
+
+#plot ROC curve with threshold color
+plot(perf,colorize=TRUE,lwd=2)
+
+
+```
+
