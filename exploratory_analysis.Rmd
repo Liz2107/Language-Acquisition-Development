@@ -30,6 +30,7 @@ glimpse(nonunique_data)
 unique_child_ids_data <- unique(nonunique_data$child_id)
 data <- data.frame(matrix(nrow = length(unique_child_ids_data), ncol = 22))
 colnames(data) <- colnames(nonunique_data)
+set.seed(1)
 for(i in 1:length(unique_child_ids_data)){
   child_rows <- nonunique_data %>% filter(child_id == unique_child_ids_data[i])
   row_num <- ceiling(runif(1, min = 0, max = nrow(child_rows)))
@@ -62,9 +63,9 @@ data %>%
 words <- read.csv("wordbank_instrument_data.csv")
 
 tot_words <- words %>%
-  group_by(child_id) %>%
+  group_by(child_id, age) %>%
   summarise(unique_count = n_distinct(english_gloss[value == "produces"]))
-
+tot_words %>% group_by(child_id) %>% summarise(count = n()) %>% filter(count!=1)
 print(tot_words)
 ```
 
@@ -81,8 +82,7 @@ missing_in_words <- setdiff(unique_child_ids_data, unique_child_ids_words)
 We have a lot missing, but we still have plenty to do the analysis with. 
 Now we join the data:
 ```{r}
-data_with_word_count <- data %>%
-  left_join(tot_words, by = "child_id")
+data_with_word_count <- left_join(x = data, y =tot_words, by = join_by("child_id","age"))
 
 data_with_valid_counts <- data_with_word_count %>%
   filter(!is.na(unique_count))

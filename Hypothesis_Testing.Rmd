@@ -22,6 +22,7 @@ nonunique_data <- read_csv("wordbank_administration_data.csv")
 unique_child_ids_data <- unique(nonunique_data$child_id)
 data <- data.frame(matrix(nrow = length(unique_child_ids_data), ncol = 22))
 colnames(data) <- colnames(nonunique_data)
+set.seed(1)
 for(i in 1:length(unique_child_ids_data)){
   child_rows <- nonunique_data %>% filter(child_id == unique_child_ids_data[i])
   row_num <- ceiling(runif(1, min = 0, max = nrow(child_rows)))
@@ -32,7 +33,7 @@ for(i in 1:length(unique_child_ids_data)){
 ```{r}
 words <- read.csv("wordbank_instrument_data.csv")
 tot_words <- words %>%
-  group_by(child_id) %>%
+  group_by(child_id, age) %>%
   summarise(unique_count = n_distinct(english_gloss[value == "produces"]))
 unique_child_ids_words <- unique(words$child_id)
 unique_child_ids_data <- unique(data$child_id)
@@ -40,8 +41,7 @@ unique_child_ids_data <- unique(data$child_id)
 missing_in_data <- setdiff(unique_child_ids_words, unique_child_ids_data)
 missing_in_words <- setdiff(unique_child_ids_data, unique_child_ids_words)
 
-data_with_word_count <- data %>%
-  left_join(tot_words, by = "child_id")
+data_with_word_count <- left_join(x = data, y =tot_words, by = join_by("child_id","age"))
 data_with_valid_counts <- data_with_word_count %>%
   filter(!is.na(unique_count))
 
@@ -69,8 +69,4 @@ plot <- ggplot(results, aes(x = slope)) + geom_histogram() + geom_vline(xinterce
 plot
 ggsave("null_dist.png", plot = plot, width = 7, height = 5, units = "in", dpi = 300)
 
-```
-
-```{r}
-  test <- data_with_valid_counts %>% group_by(child_id) %>% summarise(max(age))
 ```
