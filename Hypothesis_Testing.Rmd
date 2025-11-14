@@ -1,0 +1,76 @@
+---
+title: "Hypothesis_Testing"
+output: html_document
+---
+
+```{r setup, include=FALSE, message=FALSE,warning=FALSE}
+library(knitr)
+library(tinytex)
+library(tidyverse)
+library(dplyr)
+
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(out.width = "60%",fig.align='center')
+```
+
+```{r}
+nonunique_data <- read_csv("wordbank_administration_data.csv")
+
+#limit one observation per child_id
+unique_child_ids_data <- unique(nonunique_data$child_id)
+data <- data.frame(matrix(nrow = length(unique_child_ids_data), ncol = 22))
+colnames(data) <- colnames(nonunique_data)
+for(i in 1:length(unique_child_ids_data)){
+  child_rows <- nonunique_data %>% filter(child_id == unique_child_ids_data[i])
+  row_num <- ceiling(runif(1, min = 0, max = nrow(child_rows)))
+  data[i,] <- child_rows[row_num,]
+}
+```
+
+```{r}
+words <- read.csv("wordbank_instrument_data.csv")
+tot_words <- words %>%
+  group_by(child_id) %>%
+  summarise(unique_count = n_distinct(english_gloss[value == "produces"]))
+unique_child_ids_words <- unique(words$child_id)
+unique_child_ids_data <- unique(data$child_id)
+# Check if any child_id from 'words' is missing in 'data' and vice versa
+missing_in_data <- setdiff(unique_child_ids_words, unique_child_ids_data)
+missing_in_words <- setdiff(unique_child_ids_data, unique_child_ids_words)
+
+data_with_word_count <- data %>%
+  left_join(tot_words, by = "child_id")
+data_with_valid_counts <- data_with_word_count %>%
+  filter(!is.na(unique_count))
+
+```
+
+```{r}
+#initiate empty vector
+results <- data.frame(slope=rep(NA,1000))
+data_in_age_range <- data_with_valid_counts %>% filter(age<=25) %>% filter(age>=22)
+#repeat randomization process 1000 times and save results
+set.seed(303)
+for(i in 1:1000){
+  shuffle <- data_in_age_range %>%
+    transmute(typically_developing, unique_count,
+              Shuffle_td=sample(data_in_age_range$typically_developing,replace=FALSE))
+  
+  remodel <- glm(Shuffle_td~unique_count,data=shuffle, family = "binomial")
+  results$slope[i] <- coefficients(summary(remodel))[2,1]
+}
+
+#plot data
+model <- glm(typically_developing~unique_count,data=data_in_age_range, family =  "binomial")
+coef <- coefficients(summary(model))[2,1]
+plot <- ggplot(results, aes(x = slope)) + geom_histogram() + geom_vline(xintercept = coef, color =  "#1E90FF") + geom_vline(xintercept = quantile(x = results$slope, probs = .975), color = "#FF6347", linetype = "dashed") + geom_vline(xintercept = quantile(x = results$slope, probs = .025), color = "#FF6347", linetype = "dashed") + labs(title = "Null distribution of logistic models", subtitle = "Predicting atypical development based on words learned for children 22-25 months old" , x = "Slope Parameter", y = "Count")
+plot
+ggsave("null_dist.png", plot = plot, width = 7, height = 5, units = "in", dpi = 300)
+
+```
+
+```{r}
+  test <- data_with_valid_counts %>% group_by(child_id) %>% summarise(max(age))
+```

@@ -21,10 +21,20 @@ knitr::opts_chunk$set(out.width = "60%",fig.align='center')
 We want data that has a lot of points and examples of bilinguality and differing developmental patterns. 
 
 ```{r}
-data <- read_csv("wordbank_administration_data.csv")
+nonunique_data <- read_csv("wordbank_administration_data.csv")
+glimpse(nonunique_data)
+```
 
-glimpse(data)
-
+```{r}
+#limit one observation per child_id
+unique_child_ids_data <- unique(nonunique_data$child_id)
+data <- data.frame(matrix(nrow = length(unique_child_ids_data), ncol = 22))
+colnames(data) <- colnames(nonunique_data)
+for(i in 1:length(unique_child_ids_data)){
+  child_rows <- nonunique_data %>% filter(child_id == unique_child_ids_data[i])
+  row_num <- ceiling(runif(1, min = 0, max = nrow(child_rows)))
+  data[i,] <- child_rows[row_num,]
+}
 ```
 
 
@@ -80,6 +90,7 @@ data_with_valid_counts <- data_with_word_count %>%
 print(data_with_valid_counts)
 
 ```
+
 
 
 ```{r}
